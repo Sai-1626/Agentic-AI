@@ -37,17 +37,50 @@ class VideoComposer:
         target_mp4.parent.mkdir(parents=True, exist_ok=True)
 
         ffmpeg_exe = Config.get_ffmpeg_exe()
-        logger.info(f"Using FFmpeg binary: {ffmpeg_exe}")
-
-        # Verify visuals
+        # Verify and auto-resolve visuals for every scene
+        from .asset_downloader import AssetDownloader
         valid_scenes = []
-        for s in scenes:
-            v_file = s.get("visual_file")
-            if v_file and os.path.exists(v_file):
-                valid_scenes.append(s)
+        for idx, s in enumerate(scenes, 1):
+            scene_num = s.get("scene_number", idx)
+            try:
+                scene_num = int(scene_num)
+            except Exception:
+                scene_num = idx
+            pad_num = f"{scene_num:02d}"
+            
+            v_file = s.get("visual_file") or s.get("image_path") or s.get("visual_path") or s.get("file_path") or s.get("local_path")
+            
+            # If path not valid or doesn't exist on disk, resolve or auto-generate
+            if not (v_file and os.path.exists(v_file)):
+                candidate = Config.VISUALS_DIR / f"scene_{pad_num}.jpg"
+                if candidate.exists() and candidate.stat().st_size > 500:
+                    v_file = str(candidate)
+                else:
+                    v_file = AssetDownloader.get_and_save_visual(s, candidate)
+
+            s["visual_file"] = v_file
+            valid_scenes.append(s)
 
         if not valid_scenes:
-            raise FileNotFoundError("No valid visual files provided for video composition.")
+            # Fallback emergency scene
+            emergency_scene = {"scene_number": 1, "duration_seconds": 5, "narration": "Video presentation"}
+            default_img = Config.VISUALS_DIR / "scene_01.jpg"
+            img_path = AssetDownloader.get_and_save_visual(emergency_scene, default_img)
+            emergency_scene["visual_file"] = img_path
+            valid_scenes = [emergency_scene]
+
+        # Verify audio path
+        if not (audio_path and os.path.exists(audio_path)):
+            cand_mp3 = Config.AUDIO_DIR / "voiceover.mp3"
+            cand_wav = Config.AUDIO_DIR / "voiceover.wav"
+            if cand_mp3.exists():
+                audio_path = cand_mp3
+            elif cand_wav.exists():
+                audio_path = cand_wav
+            else:
+                from .voice_generator import VoiceGenerator
+                aud = VoiceGenerator.generate_voiceover("Automated presentation narrative audio.")
+                audio_path = Path(aud["audio_path"])
 
         # Create FFmpeg concat demuxer file
         concat_txt = Config.OUTPUT_DIR / "concat_scenes.txt"

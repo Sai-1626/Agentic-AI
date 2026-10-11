@@ -30,7 +30,7 @@ class LLMClient:
             }
         }
         try:
-            response = requests.post(url, json=payload, timeout=60)
+            response = requests.post(url, json=payload, timeout=25)
             if response.status_code == 200:
                 data = response.json()
                 return data.get("response", "").strip()

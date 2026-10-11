@@ -75,7 +75,18 @@ def api_get_visual():
     file_path = Config.VISUALS_DIR / f"scene_{scene_num:02d}.jpg"
     prompt = VisualAgent.generate_visual_prompt(scene)
     saved = AssetDownloader.get_and_save_visual(scene, file_path)
-    return jsonify({"visual_file": saved, "visual_prompt": prompt})
+    # Ensure Docker container path mapping /files/visuals/...
+    container_path = f"/files/visuals/scene_{scene_num:02d}.jpg"
+    return jsonify({
+        "visual_file": str(file_path),
+        "image_path": str(file_path),
+        "visual_path": str(file_path),
+        "file_path": str(file_path),
+        "local_path": str(file_path),
+        "container_path": container_path,
+        "scene_number": scene_num,
+        "visual_prompt": prompt
+    })
 
 @app.route("/api/tts", methods=["POST"])
 def api_tts():

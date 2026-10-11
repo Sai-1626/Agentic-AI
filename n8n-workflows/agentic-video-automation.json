@@ -735,7 +735,7 @@
     "IF — Check Files": {
       "main": [
         [{ "node": "Quality Control Agent", "type": "main", "index": 0 }],
-        [{ "node": "Prepare Complete Script", "type": "main", "index": 0 }]
+        [{ "node": "Respond to Webhook", "type": "main", "index": 0 }]
       ]
     },
     "Quality Control Agent": {
@@ -744,7 +744,7 @@
     "IF — PASS / FAIL": {
       "main": [
         [{ "node": "SEO Agent", "type": "main", "index": 0 }],
-        [{ "node": "Prepare Complete Script", "type": "main", "index": 0 }]
+        [{ "node": "Respond to Webhook", "type": "main", "index": 0 }]
       ]
     },
     "SEO Agent": {

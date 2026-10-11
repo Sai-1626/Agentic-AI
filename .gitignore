@@ -1,27 +1,9 @@
-# Environment & secrets
-.env
-config/*.json
-!config/settings.json
-*.key
-
-# Output media files
-output/visuals/*
-output/audio/*
-output/subtitles/*
-output/videos/*
-!output/**/.gitkeep
-concat_scenes.txt
-
-# Python cache & artifacts
+﻿.env
+.env.*
+!.env.example
+venv/
+.venv/
 __pycache__/
-*.py[cod]
-*$py.class
-*.so
-.pytest_cache/
-
-# n8n runtime state
-n8n_data/
-
-# OS files
+*.pyc
+node_modules/
 .DS_Store
-Thumbs.db
