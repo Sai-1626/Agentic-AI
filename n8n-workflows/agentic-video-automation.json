@@ -52,7 +52,7 @@
         "url": "http://python-worker:5000/api/plan",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={\n  \"user_prompt\": \"{{ $json.user_prompt }}\"\n}",
+        "jsonBody": "={{ JSON.stringify({ user_prompt: $json.user_prompt }) }}",
         "options": {}
       },
       "id": "node-3-planning-agent",
@@ -124,7 +124,7 @@
         "url": "http://python-worker:5000/api/scenes",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={\n  \"script\": \"{{ $json.script }}\",\n  \"duration\": {{ $json.duration }}\n}",
+        "jsonBody": "={{ JSON.stringify({ script: $json.script, duration: $json.duration }) }}",
         "options": {}
       },
       "id": "node-7-scene-agent",
@@ -232,7 +232,7 @@
         "url": "http://python-worker:5000/api/tts",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={\n  \"script\": \"{{ $json.script }}\",\n  \"duration\": 30\n}",
+        "jsonBody": "={{ JSON.stringify({ script: $json.script, duration: 30 }) }}",
         "options": {}
       },
       "id": "node-14-tts",
@@ -356,7 +356,7 @@
         "url": "http://python-worker:5000/api/qc",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={\n  \"script\": \"{{ $('Edit Fields — Save Script').first().json.script }}\",\n  \"scenes\": {{ JSON.stringify($('Scene Agent — Ollama').first().json.scenes) }},\n  \"audio_path\": \"{{ $('Save Audio').first().json.audio_path }}\",\n  \"subtitles_path\": \"{{ $('Generate Captions').first().json.subtitles_path }}\",\n  \"video_path\": \"{{ $('FFmpeg').first().json.video_path }}\"\n}",
+        "jsonBody": "={{ JSON.stringify({ script: $('Edit Fields — Save Script').first().json.script, scenes: $('Scene Agent — Ollama').first().json.scenes, audio_path: $('Save Audio').first().json.audio_path, subtitles_path: $('Generate Captions').first().json.subtitles_path, video_path: $('FFmpeg').first().json.video_path }) }}",
         "options": {}
       },
       "id": "node-21-qc-agent",
@@ -400,7 +400,7 @@
         "url": "http://python-worker:5000/api/seo",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={\n  \"topic\": \"{{ $('Edit Fields — Save Script').first().json.topic }}\",\n  \"script\": \"{{ $('Edit Fields — Save Script').first().json.script }}\"\n}",
+        "jsonBody": "={{ JSON.stringify({ topic: $('Edit Fields — Save Script').first().json.topic, script: $('Edit Fields — Save Script').first().json.script }) }}",
         "options": {}
       },
       "id": "node-23-seo-agent",
@@ -441,7 +441,7 @@
         "url": "http://python-worker:5000/api/publish/youtube",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={\n  \"video_path\": \"{{ $('FFmpeg').first().json.video_path }}\",\n  \"title\": \"{{ $('SEO Agent').first().json.youtube_title }}\",\n  \"description\": \"{{ $('SEO Agent').first().json.youtube_description }}\",\n  \"tags\": {{ JSON.stringify($('SEO Agent').first().json.youtube_tags) }}\n}",
+        "jsonBody": "={{ JSON.stringify({ video_path: $('FFmpeg').first().json.video_path, title: $('SEO Agent').first().json.youtube_title, description: $('SEO Agent').first().json.youtube_description, tags: $('SEO Agent').first().json.youtube_tags }) }}",
         "options": {}
       },
       "id": "node-26-youtube-upload",
@@ -485,7 +485,7 @@
         "url": "http://python-worker:5000/api/publish/instagram",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={\n  \"video_path\": \"{{ $('FFmpeg').first().json.video_path }}\",\n  \"caption\": \"{{ $('SEO Agent').first().json.instagram_caption }}\",\n  \"hashtags\": {{ JSON.stringify($('SEO Agent').first().json.instagram_hashtags) }}\n}",
+        "jsonBody": "={{ JSON.stringify({ video_path: $('FFmpeg').first().json.video_path, caption: $('SEO Agent').first().json.instagram_caption, hashtags: $('SEO Agent').first().json.instagram_hashtags }) }}",
         "options": {}
       },
       "id": "node-28-create-ig-media",

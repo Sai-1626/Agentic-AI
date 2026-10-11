@@ -24,7 +24,12 @@ class EmailNotifier:
         to_email = recipient or Config.NOTIFICATION_EMAIL_TO
         from_email = Config.NOTIFICATION_EMAIL_FROM or Config.SMTP_USERNAME
 
-        if not (Config.SMTP_USERNAME and Config.SMTP_PASSWORD and to_email):
+        is_placeholder = any(
+            placeholder in (Config.SMTP_USERNAME or "").lower() or placeholder in (Config.SMTP_PASSWORD or "").lower()
+            for placeholder in ["your_email", "your_app_password", "example.com"]
+        )
+
+        if not (Config.SMTP_USERNAME and Config.SMTP_PASSWORD and to_email) or is_placeholder:
             logger.info(f"[EmailNotifier Simulation]\nTo: {to_email or 'user@example.com'}\nSubject: {subject}\n\n{body}")
             return {
                 "status": "success",
