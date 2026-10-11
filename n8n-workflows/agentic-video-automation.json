@@ -1,0 +1,806 @@
+{
+  "name": "Agentic AI Social Media Video Automation",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "video-agent",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "node-1-webhook",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [100, 300]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "assign-prompt",
+              "name": "user_prompt",
+              "value": "={{ $json.body.topic || $json.body.prompt || 'Create a 60-second Instagram Reel about Artificial Intelligence in Education' }}",
+              "type": "string"
+            },
+            {
+              "id": "assign-date",
+              "name": "publish_date",
+              "value": "={{ $json.body.publish_date || '' }}",
+              "type": "string"
+            },
+            {
+              "id": "assign-time",
+              "name": "publish_time",
+              "value": "={{ $json.body.publish_time || '' }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "node-2-edit-fields",
+      "name": "Edit Fields",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [300, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://python-worker:5000/api/plan",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"user_prompt\": \"{{ $json.user_prompt }}\"\n}",
+        "options": {}
+      },
+      "id": "node-3-planning-agent",
+      "name": "Planning Agent — Ollama",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [500, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Node 4: Parse Planning JSON\nconst plan = $input.first().json;\nreturn [{\n  json: {\n    topic: plan.topic || 'Artificial Intelligence in Education',\n    target_audience: plan.target_audience || 'Students',\n    platform: plan.platform || 'Instagram Reels',\n    duration: plan.duration || 60,\n    tone: plan.tone || 'Educational',\n    style: plan.style || 'Short-form Video',\n    main_message: plan.main_message || 'AI is transforming education',\n    hook_strategy: plan.hook_strategy || 'Ask a question'\n  }\n}];"
+      },
+      "id": "node-4-parse-json",
+      "name": "Code — Parse Planning JSON",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [700, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://python-worker:5000/api/script",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json) }}",
+        "options": {}
+      },
+      "id": "node-5-script-agent",
+      "name": "Script Agent — Ollama",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [900, 300]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "assign-script",
+              "name": "script",
+              "value": "={{ $json.script }}",
+              "type": "string"
+            },
+            {
+              "id": "assign-topic",
+              "name": "topic",
+              "value": "={{ $('Code — Parse Planning JSON').first().json.topic }}",
+              "type": "string"
+            },
+            {
+              "id": "assign-dur",
+              "name": "duration",
+              "value": "={{ $('Code — Parse Planning JSON').first().json.duration }}",
+              "type": "number"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "node-6-save-script",
+      "name": "Edit Fields — Save Script",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [1100, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://python-worker:5000/api/scenes",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"script\": \"{{ $json.script }}\",\n  \"duration\": {{ $json.duration }}\n}",
+        "options": {}
+      },
+      "id": "node-7-scene-agent",
+      "name": "Scene Agent — Ollama",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1300, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Node 8: Code — Split Scenes\nconst scenes = $input.first().json.scenes || [];\nreturn scenes.map(s => ({ json: s }));"
+      },
+      "id": "node-8-split-scenes",
+      "name": "Code — Split Scenes",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1500, 300]
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "node-9-loop-over-items",
+      "name": "Loop Over Items",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [1700, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://python-worker:5000/api/visuals/get",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json) }}",
+        "options": {}
+      },
+      "id": "node-10-visual-agent",
+      "name": "Visual Agent — Ollama",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1900, 300]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "http://python-worker:5000/health",
+        "options": {}
+      },
+      "id": "node-11-get-visual",
+      "name": "HTTP Request — Get Visual",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [2100, 300]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "visual-saved",
+              "name": "visual_saved",
+              "value": true,
+              "type": "boolean"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "node-12-save-visual",
+      "name": "Download / Save Visual",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [2300, 300]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "prep-script",
+              "name": "script",
+              "value": "={{ $('Edit Fields — Save Script').first().json.script }}",
+              "type": "string"
+            },
+            {
+              "id": "prep-topic",
+              "name": "topic",
+              "value": "={{ $('Edit Fields — Save Script').first().json.topic }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "node-13-prep-script",
+      "name": "Prepare Complete Script",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [2500, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://python-worker:5000/api/tts",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"script\": \"{{ $json.script }}\",\n  \"duration\": 30\n}",
+        "options": {}
+      },
+      "id": "node-14-tts",
+      "name": "Piper TTS",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [2700, 300]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "audio-saved",
+              "name": "audio_path",
+              "value": "={{ $json.audio_path }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "node-15-save-audio",
+      "name": "Save Audio",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [2900, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://python-worker:5000/api/transcribe",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"audio_path\": \"{{ $json.audio_path }}\",\n  \"scenes\": {{ JSON.stringify($('Scene Agent — Ollama').first().json.scenes) }}\n}",
+        "options": {}
+      },
+      "id": "node-16-whisper",
+      "name": "Whisper",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [3100, 300]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "captions-saved",
+              "name": "subtitles_path",
+              "value": "={{ $json.subtitles_path }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "node-17-generate-captions",
+      "name": "Generate Captions",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [3300, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Node 18: Prepare Video Files\nconst scenes = $('Scene Agent — Ollama').first().json.scenes || [];\nconst audio = $('Save Audio').first().json.audio_path;\nconst srt = $('Generate Captions').first().json.subtitles_path;\nreturn [{\n  json: {\n    scenes: scenes,\n    audio_path: audio,\n    subtitles_path: srt\n  }\n}];"
+      },
+      "id": "node-18-prepare-video-files",
+      "name": "Prepare Video Files",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [3500, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://python-worker:5000/api/compose",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json) }}",
+        "options": {}
+      },
+      "id": "node-19-ffmpeg",
+      "name": "FFmpeg",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [3700, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "cond-video",
+              "leftValue": "={{ $json.video_path }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "node-20-check-files",
+      "name": "IF — Check Files",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [3900, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://python-worker:5000/api/qc",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"script\": \"{{ $('Edit Fields — Save Script').first().json.script }}\",\n  \"scenes\": {{ JSON.stringify($('Scene Agent — Ollama').first().json.scenes) }},\n  \"audio_path\": \"{{ $('Save Audio').first().json.audio_path }}\",\n  \"subtitles_path\": \"{{ $('Generate Captions').first().json.subtitles_path }}\",\n  \"video_path\": \"{{ $('FFmpeg').first().json.video_path }}\"\n}",
+        "options": {}
+      },
+      "id": "node-21-qc-agent",
+      "name": "Quality Control Agent",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [4100, 200]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "cond-pass",
+              "leftValue": "={{ $json.status }}",
+              "rightValue": "PASS",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "node-22-pass-fail",
+      "name": "IF — PASS / FAIL",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [4300, 200]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://python-worker:5000/api/seo",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"topic\": \"{{ $('Edit Fields — Save Script').first().json.topic }}\",\n  \"script\": \"{{ $('Edit Fields — Save Script').first().json.script }}\"\n}",
+        "options": {}
+      },
+      "id": "node-23-seo-agent",
+      "name": "SEO Agent",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [4500, 100]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://python-worker:5000/api/schedule",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"publish_date\": \"{{ $('Edit Fields').first().json.publish_date }}\",\n  \"publish_time\": \"{{ $('Edit Fields').first().json.publish_time }}\",\n  \"prompt\": \"{{ $('Edit Fields').first().json.user_prompt }}\"\n}",
+        "options": {}
+      },
+      "id": "node-24-date-time",
+      "name": "Publishing Date & Time",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [4700, 100]
+    },
+    {
+      "parameters": {
+        "amount": 2,
+        "unit": "seconds"
+      },
+      "id": "node-25-wait",
+      "name": "Wait",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [4900, 100]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://python-worker:5000/api/publish/youtube",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"video_path\": \"{{ $('FFmpeg').first().json.video_path }}\",\n  \"title\": \"{{ $('SEO Agent').first().json.youtube_title }}\",\n  \"description\": \"{{ $('SEO Agent').first().json.youtube_description }}\",\n  \"tags\": {{ JSON.stringify($('SEO Agent').first().json.youtube_tags) }}\n}",
+        "options": {}
+      },
+      "id": "node-26-youtube-upload",
+      "name": "YouTube Upload",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [5100, 0]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "cond-yt-ok",
+              "leftValue": "={{ $json.status }}",
+              "rightValue": "success",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "node-27-if-yt-success",
+      "name": "IF — YouTube Upload Successful",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [5300, 0]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://python-worker:5000/api/publish/instagram",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"video_path\": \"{{ $('FFmpeg').first().json.video_path }}\",\n  \"caption\": \"{{ $('SEO Agent').first().json.instagram_caption }}\",\n  \"hashtags\": {{ JSON.stringify($('SEO Agent').first().json.instagram_hashtags) }}\n}",
+        "options": {}
+      },
+      "id": "node-28-create-ig-media",
+      "name": "Create Instagram Media",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [5100, 250]
+    },
+    {
+      "parameters": {
+        "amount": 2,
+        "unit": "seconds"
+      },
+      "id": "node-29-ig-wait",
+      "name": "Wait (Instagram Processing)",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [5300, 250]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "ig-stat",
+              "name": "status_code",
+              "value": "FINISHED",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "node-30-check-ig-status",
+      "name": "Check Instagram Processing",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [5500, 250]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "cond-ig-ready",
+              "leftValue": "={{ $json.status_code }}",
+              "rightValue": "FINISHED",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "node-31-if-ig-ready",
+      "name": "IF — Ready?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [5700, 250]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "ig-published",
+              "name": "instagram_url",
+              "value": "={{ $('Create Instagram Media').first().json.instagram_url }}",
+              "type": "string"
+            },
+            {
+              "id": "ig-status",
+              "name": "instagram_status",
+              "value": "success",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "node-32-publish-ig-reel",
+      "name": "Publish Instagram Reel",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [5900, 250]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Node 33: Merge Results\nconst yt = $('YouTube Upload').first().json;\nconst ig = $('Publish Instagram Reel').first().json;\nreturn [{\n  json: {\n    youtube_status: yt.status || 'success',\n    youtube_url: yt.youtube_url || '',\n    instagram_status: ig.instagram_status || 'success',\n    instagram_url: ig.instagram_url || ''\n  }\n}];"
+      },
+      "id": "node-33-merge-results",
+      "name": "Merge Results",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [6100, 150]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "cond-pub-ok",
+              "leftValue": "={{ $json.youtube_status }}",
+              "rightValue": "success",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            },
+            {
+              "id": "cond-ig-ok",
+              "leftValue": "={{ $json.instagram_status }}",
+              "rightValue": "success",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "node-34-check-pub-status",
+      "name": "IF — Publishing Successful",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [6300, 150]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://python-worker:5000/api/notify/email",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"success\": true,\n  \"title\": \"{{ $('SEO Agent').first().json.youtube_title }}\",\n  \"youtube_url\": \"{{ $json.youtube_url }}\",\n  \"instagram_url\": \"{{ $json.instagram_url }}\"\n}",
+        "options": {}
+      },
+      "id": "node-35-gmail-success",
+      "name": "Gmail — Success Email",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [6500, 50]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://python-worker:5000/api/notify/email",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"success\": false,\n  \"title\": \"{{ $('SEO Agent').first().json.youtube_title }}\",\n  \"error_message\": \"Publishing failed on one or more platforms.\"\n}",
+        "options": {}
+      },
+      "id": "node-36-gmail-error",
+      "name": "Gmail — Error Email",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [6500, 250]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"status\": \"success\",\n  \"message\": \"Your social media video has been created and published successfully.\",\n  \"video\": \"final_video.mp4\",\n  \"youtube_url\": \"{{ $('Merge Results').first().json.youtube_url }}\",\n  \"instagram_url\": \"{{ $('Merge Results').first().json.instagram_url }}\",\n  \"caption\": \"{{ $('SEO Agent').first().json.instagram_caption }}\",\n  \"hashtags\": \"{{ $('SEO Agent').first().json.instagram_hashtags.join(' ') }}\"\n}",
+        "options": {}
+      },
+      "id": "node-37-respond-to-webhook",
+      "name": "Respond to Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [6700, 150]
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [[{ "node": "Edit Fields", "type": "main", "index": 0 }]]
+    },
+    "Edit Fields": {
+      "main": [[{ "node": "Planning Agent — Ollama", "type": "main", "index": 0 }]]
+    },
+    "Planning Agent — Ollama": {
+      "main": [[{ "node": "Code — Parse Planning JSON", "type": "main", "index": 0 }]]
+    },
+    "Code — Parse Planning JSON": {
+      "main": [[{ "node": "Script Agent — Ollama", "type": "main", "index": 0 }]]
+    },
+    "Script Agent — Ollama": {
+      "main": [[{ "node": "Edit Fields — Save Script", "type": "main", "index": 0 }]]
+    },
+    "Edit Fields — Save Script": {
+      "main": [[{ "node": "Scene Agent — Ollama", "type": "main", "index": 0 }]]
+    },
+    "Scene Agent — Ollama": {
+      "main": [[{ "node": "Code — Split Scenes", "type": "main", "index": 0 }]]
+    },
+    "Code — Split Scenes": {
+      "main": [[{ "node": "Loop Over Items", "type": "main", "index": 0 }]]
+    },
+    "Loop Over Items": {
+      "main": [
+        [{ "node": "Visual Agent — Ollama", "type": "main", "index": 0 }],
+        [{ "node": "Prepare Complete Script", "type": "main", "index": 0 }]
+      ]
+    },
+    "Visual Agent — Ollama": {
+      "main": [[{ "node": "HTTP Request — Get Visual", "type": "main", "index": 0 }]]
+    },
+    "HTTP Request — Get Visual": {
+      "main": [[{ "node": "Download / Save Visual", "type": "main", "index": 0 }]]
+    },
+    "Download / Save Visual": {
+      "main": [[{ "node": "Loop Over Items", "type": "main", "index": 0 }]]
+    },
+    "Prepare Complete Script": {
+      "main": [[{ "node": "Piper TTS", "type": "main", "index": 0 }]]
+    },
+    "Piper TTS": {
+      "main": [[{ "node": "Save Audio", "type": "main", "index": 0 }]]
+    },
+    "Save Audio": {
+      "main": [[{ "node": "Whisper", "type": "main", "index": 0 }]]
+    },
+    "Whisper": {
+      "main": [[{ "node": "Generate Captions", "type": "main", "index": 0 }]]
+    },
+    "Generate Captions": {
+      "main": [[{ "node": "Prepare Video Files", "type": "main", "index": 0 }]]
+    },
+    "Prepare Video Files": {
+      "main": [[{ "node": "FFmpeg", "type": "main", "index": 0 }]]
+    },
+    "FFmpeg": {
+      "main": [[{ "node": "IF — Check Files", "type": "main", "index": 0 }]]
+    },
+    "IF — Check Files": {
+      "main": [
+        [{ "node": "Quality Control Agent", "type": "main", "index": 0 }],
+        [{ "node": "Prepare Complete Script", "type": "main", "index": 0 }]
+      ]
+    },
+    "Quality Control Agent": {
+      "main": [[{ "node": "IF — PASS / FAIL", "type": "main", "index": 0 }]]
+    },
+    "IF — PASS / FAIL": {
+      "main": [
+        [{ "node": "SEO Agent", "type": "main", "index": 0 }],
+        [{ "node": "Prepare Complete Script", "type": "main", "index": 0 }]
+      ]
+    },
+    "SEO Agent": {
+      "main": [[{ "node": "Publishing Date & Time", "type": "main", "index": 0 }]]
+    },
+    "Publishing Date & Time": {
+      "main": [[{ "node": "Wait", "type": "main", "index": 0 }]]
+    },
+    "Wait": {
+      "main": [
+        [{ "node": "YouTube Upload", "type": "main", "index": 0 }],
+        [{ "node": "Create Instagram Media", "type": "main", "index": 0 }]
+      ]
+    },
+    "YouTube Upload": {
+      "main": [[{ "node": "IF — YouTube Upload Successful", "type": "main", "index": 0 }]]
+    },
+    "IF — YouTube Upload Successful": {
+      "main": [[{ "node": "Merge Results", "type": "main", "index": 0 }]]
+    },
+    "Create Instagram Media": {
+      "main": [[{ "node": "Wait (Instagram Processing)", "type": "main", "index": 0 }]]
+    },
+    "Wait (Instagram Processing)": {
+      "main": [[{ "node": "Check Instagram Processing", "type": "main", "index": 0 }]]
+    },
+    "Check Instagram Processing": {
+      "main": [[{ "node": "IF — Ready?", "type": "main", "index": 0 }]]
+    },
+    "IF — Ready?": {
+      "main": [
+        [{ "node": "Publish Instagram Reel", "type": "main", "index": 0 }],
+        [{ "node": "Wait (Instagram Processing)", "type": "main", "index": 0 }]
+      ]
+    },
+    "Publish Instagram Reel": {
+      "main": [[{ "node": "Merge Results", "type": "main", "index": 0 }]]
+    },
+    "Merge Results": {
+      "main": [[{ "node": "IF — Publishing Successful", "type": "main", "index": 0 }]]
+    },
+    "IF — Publishing Successful": {
+      "main": [
+        [{ "node": "Gmail — Success Email", "type": "main", "index": 0 }],
+        [{ "node": "Gmail — Error Email", "type": "main", "index": 0 }]
+      ]
+    },
+    "Gmail — Success Email": {
+      "main": [[{ "node": "Respond to Webhook", "type": "main", "index": 0 }]]
+    },
+    "Gmail — Error Email": {
+      "main": [[{ "node": "Respond to Webhook", "type": "main", "index": 0 }]]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

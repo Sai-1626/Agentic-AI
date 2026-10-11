@@ -1,0 +1,69 @@
+version: '3.8'
+
+services:
+  n8n:
+    image: n8nio/n8n:latest
+    container_name: video-agent-n8n
+    restart: unless-stopped
+    ports:
+      - "5678:5678"
+    environment:
+      - N8N_BASIC_AUTH_ACTIVE=true
+      - N8N_BASIC_AUTH_USER=${N8N_BASIC_AUTH_USER:-admin}
+      - N8N_BASIC_AUTH_PASSWORD=${N8N_BASIC_AUTH_PASSWORD:-password123}
+      - N8N_HOST=localhost
+      - N8N_PROTOCOL=http
+      - WEBHOOK_URL=http://localhost:5678/
+      - EXECUTIONS_DATA_PRUNE=true
+      - EXECUTIONS_DATA_MAX_AGE=7d
+      - GENERIC_TIMEZONE=${DEFAULT_TIMEZONE:-Asia/Kolkata}
+    volumes:
+      - n8n_data:/home/node/.n8n
+      - ./output:/files
+    networks:
+      - video-agent-network
+    depends_on:
+      - python-worker
+
+  ollama:
+    image: ollama/ollama:latest
+    container_name: video-agent-ollama
+    restart: unless-stopped
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    networks:
+      - video-agent-network
+
+  python-worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: video-agent-python
+    restart: unless-stopped
+    ports:
+      - "5000:5000"
+    environment:
+      - PYTHONUNBUFFERED=1
+      - OLLAMA_BASE_URL=http://ollama:11434
+      - LLM_MODEL=${LLM_MODEL:-mistral}
+      - PEXELS_API_KEY=${PEXELS_API_KEY:-}
+      - PIXABAY_API_KEY=${PIXABAY_API_KEY:-}
+      - UNSPLASH_ACCESS_KEY=${UNSPLASH_ACCESS_KEY:-}
+      - DRY_RUN_PUBLISHING=${DRY_RUN_PUBLISHING:-true}
+      - HOSTED_MEDIA_BASE_URL=http://python-worker:5000/files
+    volumes:
+      - ./scripts:/app/scripts
+      - ./output:/files
+      - ./config:/app/config
+    networks:
+      - video-agent-network
+
+networks:
+  video-agent-network:
+    driver: bridge
+
+volumes:
+  n8n_data:
+  ollama_data:

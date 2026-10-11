@@ -1,0 +1,24 @@
+{
+  "project_name": "agentic-social-media-ai",
+  "version": "1.0.0",
+  "video": {
+    "width": 1080,
+    "height": 1920,
+    "aspect_ratio": "9:16",
+    "fps": 30,
+    "codec": "libx264",
+    "audio_codec": "aac",
+    "audio_bitrate": "192k"
+  },
+  "defaults": {
+    "duration_seconds": 60,
+    "platform": "Instagram Reels",
+    "model": "mistral",
+    "tts_engine": "piper",
+    "privacy": "unlisted"
+  },
+  "quality_control": {
+    "min_pass_score": 80,
+    "max_retries": 2
+  }
+}
